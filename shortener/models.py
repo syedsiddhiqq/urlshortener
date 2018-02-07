@@ -1,7 +1,11 @@
 from django.db import models
 from .utils import codegenerator,createshortcode
+from .validators import validate_url,validate_dot_com
+from django.core.urlresolvers import reverse
+from django.conf import settings
 
-# Create your models here.
+SHORTCODE_MAX = getattr(settings, "SHORTCODE_MAX", 15)
+
 class FalcomxUrlManager(models.Manager):
     def all(self,*args,**kwargs):
         qsmain = super(FalcomxUrlManager,self).all(*args,**kwargs)
@@ -24,18 +28,26 @@ class FalcomxUrlManager(models.Manager):
 
 
 class Falcomx(models.Model):
-    url  = models.CharField(max_length = 220,)
+    url  = models.CharField(max_length = 220,validators=[validate_url,validate_dot_com])
     shortcode = models.CharField(max_length=15,unique = True,blank = True,)
     updated = models.DateTimeField(auto_now = True,)
     timestamp = models.DateTimeField(auto_now_add = True,)
     active = models.BooleanField(default = True,    )
     objects = FalcomxUrlManager()
-
-    def save(self,*args,**kwargs):
-        if self.shortcode  is None or self.shortcode == "":
+    def save(self, *args, **kwargs):
+        if self.shortcode is None or self.shortcode == "":
             self.shortcode = createshortcode(self)
-        super(Falcomx,self).save(*args,**kwargs)
+        if not "http" in self.url:
+            self.url = "http://" + self.url
+        super(Falcomx, self).save(*args, **kwargs)
+
+
+
 
 
     def __str__(self):
         return str(self.url)
+
+    def get_short_url(self):
+        url_path = reverse("scode", kwargs={'shortcode': self.shortcode}, host='www', scheme='http')
+        return url_path
