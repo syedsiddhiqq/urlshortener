@@ -1,6 +1,7 @@
 from django.contrib import admin
-from .models import ClickEvent
+
 # Register your models here.
 
+from .models import ClickEvent
 
 admin.site.register(ClickEvent)
